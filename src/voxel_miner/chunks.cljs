@@ -9,7 +9,7 @@
             [voxel-miner.texture :as t]))
 
 (defn- get-chunk [block]
-  (def chunk-size 16)
+  (def chunk-size 24)
   (map #(quot % chunk-size) (:position block)))
 
 (defn- block-faces [coord]
@@ -19,12 +19,12 @@
       (g/faces)))
 
 (defn- block-normal [block]
-  (map #(repeat 4 %) [[1 0 0]
-                      [-1 0 0]
-                      [0 1 0]
-                      [0 -1 0]
-                      [0 0 1]
-                      [0 0 -1]]))
+  [[1 0 0]
+   [-1 0 0]
+   [0 1 0]
+   [0 -1 0]
+   [0 0 1]
+   [0 0 -1]])
 
 (defn- chunk-spec [blocks]
   (def face-vector [0 1 2 0 2 3])
@@ -41,29 +41,29 @@
         render (->> (interleave position-data normal-data uv-data)
                     (partition 3)
                     (filter (fn [pu] (= 1 (side-freqs (first pu))))))
-        indices (flatten
+        indices (reduce into []
                  (for [x (range (count render))]
                    (map #(+ (* 4 x) %) face-vector)))]
-    {:attribs {:position {:data (->> render
-                                     (mapcat first)
-                                     (flatten)
+    (time {:attribs {:position {:data (->> render
+                                           (mapcat first)
+                                           (reduce into [])
+                                           (arrays/float32))
+                                :size 3}
+                     :normal {:data (->> render
+                                         (map second)
+                                         (mapcat #(repeat 4 %))
+                                         (reduce into [])
+                                         (arrays/float32))
+                              :size 3}
+                     :uv {:data (->> render
+                                     (mapcat last)
+                                     (reduce into [])
                                      (arrays/float32))
-                          :size 3}
-
-               :normal {:data (->> render
-                                   (map second)
-                                   (flatten)
-                                   (arrays/float32))
-                        :size 3}
-               :uv {:data (->> render
-                               (map last)
-                               (flatten)
-                               (arrays/float32))
-                    :size 2}}
-     :indices {:data (arrays/uint16 indices)}
-     :num-items (* (count render) 2 3)
-     :num-vertices (* (count render) 2 2)
-     :mode 4}))
+                          :size 2}}
+           :indices {:data (arrays/uint16 indices)}
+           :num-items (* (count render) 2 3)
+           :num-vertices (* (count render) 2 2)
+           :mode 4})))
 
 (defn chunkify [world]
   (->> world

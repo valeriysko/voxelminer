@@ -73,7 +73,7 @@
                 vec3 att = lightCol / pow(length(vLightDir), lightAtt);
                 vec3 diff = texture2D(tex, vUV).xyz;
                 vec3 col = att * NdotL * ((1.0 - s) * diff + s * specular) + Ka * diff;
-                float fog = fogLinear(length(vPos), 1.0, 70.0);
+                float fog = fogLinear(length(vPos), 1.0, 200.0);
                 col = mix(col, Kf, fog);
                 gl_FragColor = vec4(col, 1.0);
               }"
@@ -90,7 +90,7 @@
               :m         [:float 0.1]
               :s         [:float 0.1]
               :lightCol  [:vec3 [100 100 100]]
-              :lightPos  [:vec3 [0 0 9]]
+              :lightPos  [:vec3 [0 0 25]]
               :lightAtt  [:float 3.0]
               :time      :float}
    :attribs  {:position :vec3
@@ -114,7 +114,7 @@
         z (range (- d) d)
         :when (or
                (= y (- h))
-               (<= iso-val (m/abs* (n/noise3 (* x n-scale) (* y n-scale) (* z n-scale)))))]
+               (> iso-val (m/abs* (n/noise3 (* x n-scale) (* y n-scale) (* z n-scale)))))]
     (cond
       (= y 0) {:type :grass :position [x y z]}
       (> y (/ (- h) 2)) {:type :dirt :position [x y z]}
@@ -127,7 +127,8 @@
       (assoc :shader (sh/make-shader-from-spec gl-ctx shader-spec))
       (gl/make-buffers-in-spec gl-ctx glc/static-draw)))
 
-(defonce chunk-specs (chunks/chunkify (make-world 20 10 10)))
+(def world (time (doall (make-world 30 10 30))))
+(def chunk-specs (chunks/chunkify world))
 (def chunks (map chunk-mesh chunk-specs))
 
 (defn mouse-down [e]
@@ -199,10 +200,9 @@
         models    (map (fn [model]
                          (-> model
                              (cam/apply (cam/perspective-camera
-                                         {:eye (vec3 0 0 5) :fov 90 :aspect view-rect}))
+                                         {:eye (vec3 0 0 20) :fov 90 :aspect view-rect}))
                              (assoc :shader shader)
-                             (gl/make-buffers-in-spec gl glc/static-draw)
-                             (time)))
+                             (gl/make-buffers-in-spec gl glc/static-draw)))
                        chunk-specs)
         tex-ready (volatile! false)
         tex       (buf/load-texture
