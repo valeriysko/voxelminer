@@ -1,7 +1,5 @@
 (ns voxel-miner.core
   (:require [dommy.core :as dom]
-
-            [thi.ng.math.core :as m :refer [PI HALF_PI TWO_PI]]
             [thi.ng.color.core :as col]
             [thi.ng.typedarrays.core :as arrays]
             [thi.ng.geom.gl.core :as gl]
@@ -27,7 +25,6 @@
             [thi.ng.glsl.fog :as fog]
             [thi.ng.color.gradients :as grad]
 
-            [thi.ng.math.noise :as n]
             [voxel-miner.chunks :as chunks]
             [voxel-miner.matrix :as matrix]
             [voxel-miner.texture :as t]))
@@ -105,21 +102,6 @@
 (def p-matrix (gl/perspective 90 aspect-ratio 1 100))
 (def v-matrix (flatten (matrix/translate-z matrix/i4 -10)))
 
-(def n-scale 0.1)
-(def iso-val 0.33)
-
-(defn make-world [w h d]
-  (for [x (range (- w) w)
-        y (range (- h) 1)
-        z (range (- d) d)
-        :when (or
-               (= y (- h))
-               (> iso-val (m/abs* (n/noise3 (* x n-scale) (* y n-scale) (* z n-scale)))))]
-    (cond
-      (= y 0) {:type :grass :position [x y z]}
-      (> y (/ (- h) 2)) {:type :dirt :position [x y z]}
-      :else {:type :stone :position [x y z]})))
-
 (defn chunk-mesh [chunk-spec]
   (-> chunk-spec
       (merge {:uniforms {:proj p-matrix
@@ -127,7 +109,7 @@
       (assoc :shader (sh/make-shader-from-spec gl-ctx shader-spec))
       (gl/make-buffers-in-spec gl-ctx glc/static-draw)))
 
-(def world (time (doall (make-world 10 10 10))))
+(def world (doall (chunks/make-world 20 10 20)))
 (def chunk-specs (chunks/chunkify world))
 (def chunks (map chunk-mesh chunk-specs))
 
@@ -135,11 +117,11 @@
   (reset! drag true)
   ;; (reset! old-x (.-pageX e))
   ;; (reset! old-y (.-pageY e))
-  (.requestPointerLock canvas)
+  ;; (.requestPointerLock canvas)
   (.preventDefault e))
 
 (defn mouse-up [e]
-  ;; (reset! drag false)
+  (reset! drag false)
   true)
 
 (defn mouse-move [e]
@@ -153,12 +135,12 @@
       (reset! old-x (.-movementX e))
       (reset! old-y (.-movementY e)))))
 
-;; (defonce add-listeners
-;;   (do
-;;     (dom/listen! canvas :mousedown mouse-down)
-;;     (dom/listen! canvas :mouseup mouse-up)
-;;     (dom/listen! canvas :mouseout mouse-up)
-;;     (dom/listen! canvas :mousemove mouse-move)))
+(defonce add-listeners
+  (do
+    (dom/listen! canvas :mousedown mouse-down)
+    (dom/listen! canvas :mouseup mouse-up)
+    (dom/listen! canvas :mouseout mouse-up)
+    (dom/listen! canvas :mousemove mouse-move)))
 
 (def tex-ready (volatile! false))
 (def tex (buf/load-texture
@@ -239,4 +221,4 @@
                 (gl/inject-normal-matrix :model :view :normalMat)))))
        true))))
 
-;; (demo)
+(demo)
