@@ -9,7 +9,7 @@
             [voxel-miner.texture :as t]))
 
 (defn- get-chunk [block]
-  (def chunk-size 24)
+  (def chunk-size 16)
   (map #(quot % chunk-size) (:position block)))
 
 (defn- block-faces [coord]
@@ -28,23 +28,23 @@
 
 (defn- chunk-spec [blocks]
   (def face-vector [0 1 2 0 2 3])
-  (let [position-data (->> blocks
-                           (map :position)
-                           (mapcat block-faces)
-                           (map set))
-        normal-data (->> blocks
-                         (mapcat block-normal))
-        uv-data (->> blocks
-                     (map :type)
-                     (mapcat t/block-texture))
-        side-freqs (frequencies position-data)
-        render (->> (interleave position-data normal-data uv-data)
-                    (partition 3)
-                    (filter (fn [pu] (= 1 (side-freqs (first pu))))))
-        indices (reduce into []
-                 (for [x (range (count render))]
-                   (map #(+ (* 4 x) %) face-vector)))]
-    (time {:attribs {:position {:data (->> render
+  (time (let [position-data (->> blocks
+                                 (map :position)
+                                 (mapcat block-faces)
+                                 (map set))
+              normal-data (->> blocks
+                               (mapcat block-normal))
+              uv-data (->> blocks
+                           (map :type)
+                           (mapcat t/block-texture))
+              side-freqs (frequencies position-data)
+              render (->> (interleave position-data normal-data uv-data)
+                          (partition 3)
+                          (filter (fn [pu] (= 1 (side-freqs (first pu))))))
+              indices (reduce into []
+                              (for [x (range (count render))]
+                                (map #(+ (* 4 x) %) face-vector)))]
+          {:attribs {:position {:data (->> render
                                            (mapcat first)
                                            (reduce into [])
                                            (arrays/float32))
@@ -65,8 +65,16 @@
            :num-vertices (* (count render) 2 2)
            :mode 4})))
 
+(defn- vectorize [world]
+  (let [blocks (new js/Module.VectorBlock)]
+    (doseq [block world]
+      (.push_back blocks (clj->js block)))
+    blocks))
+
 (defn chunkify [world]
   (->> world
-       (group-by get-chunk)
-       (vals)
-       (map chunk-spec)))
+       vectorize))
+
+(js/console.log
+ (time (js/Module.chunkify
+        (chunkify (repeat 1000 {:position [0 0 0] :type "grass"})))))

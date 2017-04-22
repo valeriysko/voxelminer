@@ -1,6 +1,6 @@
 (ns voxel-miner.texture)
 
-(def texture-file "/texture.png")
+(def texture-file "texture.png")
 
 (defn block-texture [type]
   (def grass-top [[0 0] [0.125 0] [0.125 0.125] [0 0.125]])

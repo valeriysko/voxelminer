@@ -127,7 +127,7 @@
       (assoc :shader (sh/make-shader-from-spec gl-ctx shader-spec))
       (gl/make-buffers-in-spec gl-ctx glc/static-draw)))
 
-(def world (time (doall (make-world 30 10 30))))
+(def world (time (doall (make-world 10 10 10))))
 (def chunk-specs (chunks/chunkify world))
 (def chunks (map chunk-mesh chunk-specs))
 
@@ -153,12 +153,12 @@
       (reset! old-x (.-movementX e))
       (reset! old-y (.-movementY e)))))
 
-(defonce add-listeners
-  (do
-    (dom/listen! canvas :mousedown mouse-down)
-    (dom/listen! canvas :mouseup mouse-up)
-    (dom/listen! canvas :mouseout mouse-up)
-    (dom/listen! canvas :mousemove mouse-move)))
+;; (defonce add-listeners
+;;   (do
+;;     (dom/listen! canvas :mousedown mouse-down)
+;;     (dom/listen! canvas :mouseup mouse-up)
+;;     (dom/listen! canvas :mouseout mouse-up)
+;;     (dom/listen! canvas :mousemove mouse-move)))
 
 (def tex-ready (volatile! false))
 (def tex (buf/load-texture
@@ -239,4 +239,4 @@
                 (gl/inject-normal-matrix :model :view :normalMat)))))
        true))))
 
-(demo)
+;; (demo)
