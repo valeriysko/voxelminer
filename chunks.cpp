@@ -92,18 +92,43 @@ vector<vector<float>> stoneSide = {
   {0.25, 0.125}, {0.125, 0.125}, {0.125, 0}, {0.25, 0}
 };
 
-vector<vector<vector<float>>> grassTex = []() {
-  vector<vector<vector<float>>> grassTex;
-  grassTex.push_back(grassSide);
-  grassTex.push_back(grassSide);
-  grassTex.push_back(grassTop);
-  grassTex.push_back(dirtSide);
-  grassTex.push_back(grassSide);
-  grassTex.push_back(grassSide);
-  return grassTex;
-}();
+vector<vector<vector<float>>> grassTex = {
+  grassSide,
+  grassSide,
+  grassTop,
+  dirtSide,
+  grassSide,
+  grassSide
+};
+
+vector<vector<vector<float>>> stoneTex = {
+  stoneSide,
+  stoneSide,
+  stoneSide,
+  stoneSide,
+  stoneSide,
+  stoneSide
+};
+
+vector<vector<vector<float>>> dirtTex = {
+  dirtSide,
+  dirtSide,
+  dirtSide,
+  dirtSide,
+  dirtSide,
+  dirtSide
+};
 
 vector<vector<vector<float>>> getTexture(string type) {
+  if (type == "grass") {
+    return grassTex;
+  }
+  if (type == "dirt") {
+    return dirtTex;
+  }
+  if (type == "stone") {
+    return stoneTex;
+  }
   return grassTex;
 }
 
@@ -112,12 +137,20 @@ emscripten::val Float32Array = emscripten::val::global("Float32Array");
 emscripten::val Uint16Array = emscripten::val::global("Uint16Array");
 
 emscripten::val chunkify(vector<Block> blocks) {
+  int blockCount = blocks.size();
   vector<vector<vector<int>>> faces;
   vector<vector<int>> normals;
   vector<vector<vector<float>>> texture;
+
+  vector<set<vector<int>>> facesets;
+  map<set<vector<int>>, int> freqs;
+
   for (Block block: blocks) {
     for (auto face: getFaces(block.position)) {
       faces.push_back(face);
+      set<vector<int>> s(face.begin(), face.end());
+      facesets.push_back(s);
+      freqs[s] = 0;
     }
     for (auto normal: blockNormal) {
       normals.push_back(normal);
@@ -127,16 +160,6 @@ emscripten::val chunkify(vector<Block> blocks) {
     }
   }
 
-  vector<set<vector<int>>> facesets;
-  for (auto face: faces) {
-    set<vector<int>> *s = new set<vector<int>>(face.begin(), face.end());
-    facesets.push_back(*s);
-  }
-
-  map<set<vector<int>>, int> freqs;
-  for (auto face: facesets) {
-    freqs[face] = 0;
-  }
   for (auto face: facesets) {
     freqs[face] = freqs[face] + 1;
   }
@@ -151,7 +174,6 @@ emscripten::val chunkify(vector<Block> blocks) {
       blacklist.insert(i);
     }
   }
-  resultCount = faces.size();
 
   emscripten::val result = JsArray.new_();
 
@@ -161,7 +183,7 @@ emscripten::val chunkify(vector<Block> blocks) {
   int p = 0;
   int n = 0;
   int u = 0;
-  for (int i = 0; i < resultCount; i++) {
+  for (int i = 0; i < faces.size(); i++) {
     if (blacklist.find(i) != blacklist.end()) {
       continue;
     }
@@ -201,6 +223,7 @@ emscripten::val chunkify(vector<Block> blocks) {
   result.set(2, normalData);
   result.set(3, uvData);
   result.set(4, indices);
+
   return result;
 }
 

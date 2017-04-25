@@ -51,7 +51,7 @@
                 :source-paths ["src"]
                 :compiler {:output-to "resources/public/js/compiled/voxel_miner.js"
                            :main voxel-miner.core
-                           :optimizations :advanced
+                           :optimizations :whitespace
                            :pretty-print false
                            :externs ["externs.js"]}}]}
 

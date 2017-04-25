@@ -11,10 +11,8 @@
             [thi.ng.typedarrays.core :as arrays]
             [voxel-miner.texture :as t]))
 
-(enable-console-print!)
-
 (def n-scale 0.1)
-(def iso-val 0.33)
+(def iso-val 0.2)
 
 (defn- vectorize [chunk]
   (let [blocks (new js/Module.VectorBlock)]
@@ -26,12 +24,12 @@
   (for [x (range (- w) w)
         y (range (- h) 1)
         z (range (- d) d)
-        :when (or
-               (= y (- h))
-               (> iso-val (m/abs* (n/noise3 (* x n-scale) (* y n-scale) (* z n-scale)))))]
+        :when (> iso-val (m/abs* (n/noise3 (* x n-scale)
+                                           (* y n-scale)
+                                           (* z n-scale))))]
     (cond
       (= y 0) #js {"type" "grass" "position" #js [x y z]}
-      (> y (/ (- h) 2)) #js {"type" "dirt" "position" #js [x y z]}
+      (>= y (/ (- h) 2)) #js {"type" "dirt" "position" #js [x y z]}
       :else #js {"type" "stone" "position" #js [x y z]})))
 
 (def chunk-size 16)
@@ -42,22 +40,22 @@
 
 (defn- chunk-spec [blocks]
   (def face-vector [0 1 2 0 2 3])
-  (time (let [chunky (js/Module.chunkify (vectorize blocks))
-              render-count (aget chunky 0)
-              posd (aget chunky 1)
-              normd (aget chunky 2)
-              uvd (aget chunky 3)
-              indices (aget chunky 4)]
-          {:attribs {:position {:data posd
-                                :size 3}
-                     :normal {:data normd
-                              :size 3}
-                     :uv {:data uvd
-                          :size 2}}
-           :indices {:data indices}
-           :num-items (* render-count 2 3)
-           :num-vertices (* render-count 2 2)
-           :mode 4})))
+  (let [chunky (js/Module.chunkify (vectorize blocks))
+        render-count (aget chunky 0)
+        posd (aget chunky 1)
+        normd (aget chunky 2)
+        uvd (aget chunky 3)
+        indices (aget chunky 4)]
+    {:attribs {:position {:data posd
+                          :size 3}
+               :normal {:data normd
+                        :size 3}
+               :uv {:data uvd
+                    :size 2}}
+     :indices {:data indices}
+     :num-items (* render-count 2 3)
+     :num-vertices (* render-count 2 2)
+     :mode 4}))
 
 (defn chunkify [world]
   (->> world

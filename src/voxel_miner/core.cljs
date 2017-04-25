@@ -29,8 +29,6 @@
             [voxel-miner.matrix :as matrix]
             [voxel-miner.texture :as t]))
 
-(enable-console-print!)
-
 (defonce canvas (dom/sel1 :#main))
 (defonce gl-ctx (gl/gl-context "main"))
 (defonce view-rect (gl/get-viewport-rect gl-ctx))
@@ -110,7 +108,7 @@
       (gl/make-buffers-in-spec gl-ctx glc/static-draw)))
 
 (def world (doall (chunks/make-world 20 10 20)))
-(def chunk-specs (chunks/chunkify world))
+(def chunk-specs (doall (chunks/chunkify world)))
 (def chunks (map chunk-mesh chunk-specs))
 
 (defn mouse-down [e]
@@ -149,31 +147,7 @@
            :src t/texture-file
            :flip false}))
 
-(def amortization 0)
-(defn draw-frame! [t]
-  (let [dt (- t @time-old)]
-    (when-not @drag
-      (swap! dx #(* % amortization))
-      (swap! dy #(* % amortization))
-      (swap! theta #(+ % @dx))
-      (swap! phi #(+ % @dy)))
-    (reset! m-matrix (-> matrix/i4
-                         (matrix/rotate-x @phi)
-                         (matrix/rotate-y @theta)))
-    (reset! time-old t))
-  (when @tex-ready
-    (gl/bind tex 0)
-    (doto gl-ctx
-      (gl/set-viewport view-rect)
-      (gl/clear-color-and-depth-buffer 0.8 0.9 1 1 1)
-      (gl/enable glc/depth-test)
-      (gl/enable glc/cull-face))
-    (doseq [model chunks]
-      (gl/draw-with-shader gl-ctx
-                           (-> model
-                               (assoc-in [:uniforms :model] (flatten @m-matrix))))))
-  true)
-
+(def amortization 0.95)
 (defn ^:export demo
   []
   (let [gl        (gl/gl-context "main")
@@ -182,7 +156,7 @@
         models    (map (fn [model]
                          (-> model
                              (cam/apply (cam/perspective-camera
-                                         {:eye (vec3 0 0 20) :fov 90 :aspect view-rect}))
+                                         {:eye (vec3 0 3 10) :fov 90 :aspect view-rect}))
                              (assoc :shader shader)
                              (gl/make-buffers-in-spec gl glc/static-draw)))
                        chunk-specs)
@@ -197,7 +171,7 @@
          (when-not @drag
            (swap! dx #(* % amortization))
            (swap! dy #(* % amortization))
-           (swap! theta #(+ % @dx))
+           (swap! theta #(+ % @dx (- 0.002)))
            (swap! phi #(+ % @dy)))
          (reset! m-matrix (-> matrix/i4
                               (matrix/rotate-x @phi)
@@ -220,5 +194,3 @@
                         :model (-> M44 (g/rotate-x @phi) (g/rotate-y @theta)))
                 (gl/inject-normal-matrix :model :view :normalMat)))))
        true))))
-
-(demo)
