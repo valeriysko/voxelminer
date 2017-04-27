@@ -29,14 +29,18 @@
                                            (* z n-scale))))]
     (cond
       (= y 0) #js {"type" "grass" "position" #js [x y z]}
-      (>= y (/ (- h) 2)) #js {"type" "dirt" "position" #js [x y z]}
+      (> y (/ (- h) 2)) #js {"type" "dirt" "position" #js [x y z]}
       :else #js {"type" "stone" "position" #js [x y z]})))
 
-(def chunk-size 16)
+(def chunk-size 20)
+(defn- chunk-dim [n]
+  (if (>= n 0)
+    (quot n chunk-size)
+    (- (quot n chunk-size) 1)))
+
 (defn- get-chunk [block]
   (let [pos (o/get block "position")]
-    [(quot (first pos) chunk-size)
-     (quot (last pos) chunk-size)]))
+    (map chunk-dim pos)))
 
 (defn- chunk-spec [blocks]
   (def face-vector [0 1 2 0 2 3])

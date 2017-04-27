@@ -107,8 +107,8 @@
       (assoc :shader (sh/make-shader-from-spec gl-ctx shader-spec))
       (gl/make-buffers-in-spec gl-ctx glc/static-draw)))
 
-(def world (doall (chunks/make-world 20 10 20)))
-(def chunk-specs (doall (chunks/chunkify world)))
+(defonce world (doall (chunks/make-world 20 10 20)))
+(defonce chunk-specs (doall (chunks/chunkify world)))
 (def chunks (map chunk-mesh chunk-specs))
 
 (defn mouse-down [e]
